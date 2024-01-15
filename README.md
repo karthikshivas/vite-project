@@ -1,2 +1,2 @@
 # vite-project
-A Video game discovery app using React, Typescript 
+Expense management App using React and Typescript
