@@ -7,6 +7,14 @@ import Form from "./components/Form";
 import ExpenseList from "./expense/components/ExpenseList";
 import ExpenseFilter from "./expense/components/ExpenseFilter";
 import ExpenseForm from "./expense/components/ExpenseForm";
+import axios, { AxiosError, CanceledError } from "axios";
+import { FaBorderAll } from "react-icons/fa";
+import apiClient from "./services/api-client";
+
+interface User {
+  id: number;
+  name: string;
+}
 
 function App() {
   const [products, setProducts] = useState(["Product 1", "Product 2"]);
@@ -36,13 +44,48 @@ function App() {
     ? expenses.filter((expense) => expense.category === selectedCategory)
     : expenses;
 
-  const ref = useRef<HTMLInputElement>(null);
+  const [users, setUsers] = useState<User[]>([]);
+
+  const [error, setError] = useState("");
+
+  const [isLoading, setLoading] = useState(false);
 
   //afterRender
   useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
     //side Effect
-    if (ref.current) ref.current.focus();
-  });
+    apiClient
+      .get<User[]>("/users", {
+        signal: controller.signal,
+      })
+      .then((res) => {
+        setUsers(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (err instanceof CanceledError) return;
+        setError(err.message);
+        setLoading(false);
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  // Another way to use axios with asyn await and try catch
+
+  // useEffect(() => {
+  //   const fetchUser = async () => {
+  //     try {
+  //       const res = await axios.get<User[]>(
+  //         "https://jsonplaceholder.typicode.com/cusers"
+  //       );
+  //       setUsers(res.data);
+  //     } catch (err) {
+  //       setError((err as AxiosError).message);
+  //     }
+  //   };
+  // });
 
   return (
     <div>
@@ -52,9 +95,10 @@ function App() {
 
       <Form /> */}
 
-      <div className="mb-3">
-        <input ref={ref} type="text" className="form-control" />
-      </div>
+      {isLoading && <div className="spinner-border"></div>}
+
+      {error && <p className="text-danger">{error}</p>}
+
       <div className="mb-5">
         <ExpenseForm
           onSubmit={(expense) =>
